@@ -98,9 +98,9 @@ O simulador será implementado em:
 
 Projeto desenvolvido pelos estudantes:
 
-* Nome do Integrante
-* Nome do Integrante
 * **Miracle Temitope Hazzan**
+* **Lucas Leite**
+*  **Antonio Carlos**
 
 ---
 
