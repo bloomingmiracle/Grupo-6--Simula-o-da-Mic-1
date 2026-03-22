@@ -100,6 +100,7 @@ Projeto desenvolvido pelos estudantes:
 
 * **Miracle Temitope Hazzan**
 * **Lucas Leite**
+* **Tiago Varelo Silva**
 *  **Antonio Carlos**
 
 ---
