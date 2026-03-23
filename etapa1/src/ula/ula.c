@@ -86,6 +86,10 @@ int main() {
         int INVA = linha[4] - '0';
         int INC = linha[5] - '0';
 
+      printf("Instrucao: %s", linha);
+
+      printf("FO=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", FO, F1, ENA, ENB, INVA, INC);
+
         // 🟢 PASSO 6 — Chamada da ULA
         int carry;
         int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
