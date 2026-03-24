@@ -109,6 +109,8 @@ int main() {
         int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
 
         //passo 7 -- Atualização A
+        int LogA = A; // A antes de atualizar
+
         A = S;
 
         printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, A, B, S, carry);
@@ -116,7 +118,7 @@ int main() {
         fprintf(log_file, "Cycle: %d\n", PC);
         fprintf(log_file, "PC: %d\n", PC);
         fprintf(log_file, "IR: %s\n", IR);
-        fprintf(log_file, "A: %d\n", A);
+        fprintf(log_file, "A: %d\n", LogA);
         fprintf(log_file, "B: %d\n", B);
         fprintf(log_file, "S: %d\n", S);
         fprintf(log_file, "Carry: %d\n", carry);
