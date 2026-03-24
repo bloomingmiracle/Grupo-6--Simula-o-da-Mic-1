@@ -40,6 +40,20 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
         if ((A_in > 0 && B_in > 0 && S < 0) ||
             (A_in < 0 && B_in < 0 && S > 0)) {
             *carry = 1;
+
+            /* Sugestão de melhoria
+             *
+             * if (F0 == 1 && F1 == 1) {
+             * carry = (A_in + B_in + INC) > 1;
+             * }
+             * Do jeito acima funciona melhor como a ULA funcionaria usando a mesma lógica de maneira resumida
+             *
+             * OU tbm pode ser feito desse jeito abaixo:
+             *
+             *  *carry = (A_in & B_in) | ((A_in | B_in) & ~S);
+             *
+             *  que seria o jeito mais fiel ao uso da ULA
+             */
         }
     }
 
@@ -66,7 +80,7 @@ int main() {
 
     // 🟢 Valores iniciais (não interfere nos demais)
 
-    int A = 0; //Alterado para 0 para mais coerencia com o sistema representado 
+    int A = 0; //Alterado para 0 para mais coerencia com o sistema representado
     int B = 1;
     int PC = 0;
 
