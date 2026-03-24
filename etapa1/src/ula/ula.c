@@ -34,30 +34,10 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
         S = S + 1;
     }
 
-    // Carry
+    // Carry (forma simplificada para esta etapa)
     *carry = 0;
     if (F0 == 1 && F1 == 1) {
-
         *carry = (A_in + B_in + INC) > 1;
-
-        //if ((A_in > 0 && B_in > 0 && S < 0) || //código anterior, testando melhoria 1
-        //   (A_in < 0 && B_in < 0 && S > 0)) {
-        //    *carry = 1;
-
-            /* Sugestão de melhoria
-             *
-             * if (F0 == 1 && F1 == 1) {
-             * *carry = (A_in + B_in + INC) > 1;
-             * }
-             * Do jeito acima funciona melhor como a ULA funcionaria usando a mesma lógica de maneira resumida
-             *
-             * OU tbm pode ser feito desse jeito abaixo:
-             *
-             *  *carry = (A_in & B_in) | ((A_in | B_in) & ~S);
-             *
-             *  que seria o jeito mais fiel ao uso da ULA
-             */
-        //}
     }
 
     return S;
@@ -66,7 +46,6 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
 int main() {
 
     FILE *file = fopen("programa_etapa1.txt", "r");
-
     FILE *log_file = fopen("saida_etapa1.txt", "w");
 
     if (file == NULL) {
@@ -81,17 +60,16 @@ int main() {
 
     char linha[10];
 
-    // 🟢 Valores iniciais (não interfere nos demais)
-
-    int A = 0; //Alterado para 0 para mais coerencia com o sistema representado
+    // 🟢 Valores iniciais (conforme enunciado)
+    int A = -1;
     int B = 1;
     int PC = 0;
 
     while (fgets(linha, sizeof(linha), file)) {
-        
-    linha[strcspn(linha, "\n")] = 0;
 
-        if(strlen(linha) == 0) continue; 
+        linha[strcspn(linha, "\n")] = 0;
+
+        if(strlen(linha) == 0) continue;
 
         char IR[10];
         strcpy(IR, linha);
@@ -103,21 +81,19 @@ int main() {
         int INVA = linha[4] - '0';
         int INC = linha[5] - '0';
 
-      printf("Instrucao: %s", linha);
-
-      printf("F0=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", F0, F1, ENA, ENB, INVA, INC);
+        printf("\nInstrucao: %s", linha);
+        printf("\nF0=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", F0, F1, ENA, ENB, INVA, INC);
 
         // 🟢 PASSO 6 — Chamada da ULA
         int carry;
         int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
 
-        //passo 7 -- Atualização A
-        int LogA = A; // A antes de atualizar
-
+        // 🟢 PASSO 7 — Atualização de A
+        int LogA = A; // valor antigo de A
         A = S;
 
         printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, LogA, B, S, carry);
-        
+
         fprintf(log_file, "Cycle: %d\n", PC);
         fprintf(log_file, "PC: %d\n", PC);
         fprintf(log_file, "IR: %s\n", IR);
@@ -132,7 +108,7 @@ int main() {
 
     fclose(file);
     fclose(log_file);
-    
-    printf("\nProcessamento concluído. Verifique o arquivo 'saida_etapa1.txt'.\n");
+
+    printf("\nProcessamento concluido. Verifique o arquivo 'saida_etapa1.txt'.\n");
     return 0;
 }
