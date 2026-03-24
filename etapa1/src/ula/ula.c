@@ -37,14 +37,17 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
     // Carry
     *carry = 0;
     if (F0 == 1 && F1 == 1) {
-        if ((A_in > 0 && B_in > 0 && S < 0) ||
-            (A_in < 0 && B_in < 0 && S > 0)) {
-            *carry = 1;
+
+        *carry = (A_in + B_in + INC) > 1;
+
+        //if ((A_in > 0 && B_in > 0 && S < 0) || //código anterior, testando melhoria 1
+        //   (A_in < 0 && B_in < 0 && S > 0)) {
+        //    *carry = 1;
 
             /* Sugestão de melhoria
              *
              * if (F0 == 1 && F1 == 1) {
-             * carry = (A_in + B_in + INC) > 1;
+             * *carry = (A_in + B_in + INC) > 1;
              * }
              * Do jeito acima funciona melhor como a ULA funcionaria usando a mesma lógica de maneira resumida
              *
@@ -54,7 +57,7 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
              *
              *  que seria o jeito mais fiel ao uso da ULA
              */
-        }
+        //}
     }
 
     return S;
@@ -113,7 +116,7 @@ int main() {
 
         A = S;
 
-        printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, A, B, S, carry);
+        printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, LogA, B, S, carry);
         
         fprintf(log_file, "Cycle: %d\n", PC);
         fprintf(log_file, "PC: %d\n", PC);
