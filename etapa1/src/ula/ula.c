@@ -66,7 +66,7 @@ int main() {
 
     // 🟢 Valores iniciais (não interfere nos demais)
 
-    int A = -1;
+    int A = 0; //Alterado para 0 para mais coerencia com o sistema representado 
     int B = 1;
     int PC = 0;
 
@@ -88,11 +88,14 @@ int main() {
 
       printf("Instrucao: %s", linha);
 
-      printf("FO=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", FO, F1, ENA, ENB, INVA, INC);
+      printf("F0=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", F0, F1, ENA, ENB, INVA, INC);
 
         // 🟢 PASSO 6 — Chamada da ULA
         int carry;
         int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
+
+        //passo 7 -- Atualização A
+        A = S;
 
         printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, A, B, S, carry);
         
