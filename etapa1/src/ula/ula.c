@@ -1,21 +1,19 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-// 🟢 PASSO 5 — Função da ULA
+// 🟢 ULA
 int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
 
-    int A_in = A;
-    int B_in = B;
+    int A_in = A & 1;
+    int B_in = B & 1;
     int S = 0;
 
-    // ENA / ENB
     if (!ENA) A_in = 0;
     if (!ENB) B_in = 0;
 
-    // INVA
-    if (INVA) A_in = ~A_in;
+    if (INVA) A_in = (~A_in) & 1;
 
-    // Operações
     if (F0 == 0 && F1 == 0) {
         S = A_in & B_in;
     }
@@ -23,92 +21,145 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
         S = A_in | B_in;
     }
     else if (F0 == 1 && F1 == 0) {
-        S = ~B_in;
+        S = (~B_in) & 1;
     }
     else if (F0 == 1 && F1 == 1) {
-        S = A_in + B_in;
+        S = A_in + B_in + INC;
     }
 
-    // INC
-    if (INC) {
-        S = S + 1;
-    }
+    *carry = (F0 == 1 && F1 == 1) ? (S > 1) : 0;
 
-    // Carry (forma simplificada para esta etapa)
-    *carry = 0;
-    if (F0 == 1 && F1 == 1) {
-        *carry = (A_in + B_in + INC) > 1;
-    }
+    S &= 1;
 
     return S;
 }
 
 int main() {
 
-    FILE *file = fopen("programa_etapa1.txt", "r");
-    FILE *log_file = fopen("saida_etapa1.txt", "w");
+    FILE *prog = fopen("programa_etapa2_tarefa2.txt", "r");
+    FILE *regs = fopen("registradores_etapa2_tarefa2.txt", "r");
+    FILE *log = fopen("saida.txt", "w");
 
-    if (file == NULL) {
-        printf("Erro ao abrir o arquivo de entrada\n");
-        return 1;
-    }
-    if (log_file == NULL) {
-        printf("Erro ao criar o arquivo de log\n");
-        fclose(file);
+    if (!prog || !regs || !log) {
+        printf("Erro ao abrir arquivos\n");
         return 1;
     }
 
-    char linha[10];
+    // 🔵 REGISTRADORES
+    int mar=0, mdr=0, pc=0, mbr=0;
+    int sp=0, lv=0, cpp=0, tos=0, opc=0, h=0;
 
-    // 🟢 Valores iniciais (conforme enunciado)
-    int A = -1;
-    int B = 1;
-    int PC = 0;
+    // 🔵 LEITURA DOS REGISTRADORES
+    char nome[10];
+    int valor;
 
-    while (fgets(linha, sizeof(linha), file)) {
+    while (fscanf(regs, "%s %d", nome, &valor) != EOF) {
+        if (strcmp(nome, "MAR") == 0) mar = valor;
+        else if (strcmp(nome, "MDR") == 0) mdr = valor;
+        else if (strcmp(nome, "PC") == 0) pc = valor;
+        else if (strcmp(nome, "MBR") == 0) mbr = valor;
+        else if (strcmp(nome, "SP") == 0) sp = valor;
+        else if (strcmp(nome, "LV") == 0) lv = valor;
+        else if (strcmp(nome, "CPP") == 0) cpp = valor;
+        else if (strcmp(nome, "TOS") == 0) tos = valor;
+        else if (strcmp(nome, "OPC") == 0) opc = valor;
+        else if (strcmp(nome, "H") == 0) h = valor;
+    }
+
+    fclose(regs);
+
+    char linha[30];
+    int ciclo = 0;
+
+    while (fgets(linha, sizeof(linha), prog)) {
 
         linha[strcspn(linha, "\n")] = 0;
+        if (strlen(linha) != 21) continue;
 
-        if(strlen(linha) == 0) continue;
-
-        char IR[10];
+        char IR[30];
         strcpy(IR, linha);
 
-        int F0 = linha[0] - '0';
-        int F1 = linha[1] - '0';
-        int ENA = linha[2] - '0';
-        int ENB = linha[3] - '0';
-        int INVA = linha[4] - '0';
-        int INC = linha[5] - '0';
+        // 🔵 ETAPA 5 — Separar instrução
+        char controle[9], c_bus[10], b_bus[5];
 
-        printf("\nInstrucao: %s", linha);
-        printf("\nF0=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", F0, F1, ENA, ENB, INVA, INC);
+        strncpy(controle, linha, 8);
+        controle[8] = '\0';
 
-        // 🟢 PASSO 6 — Chamada da ULA
+        strncpy(c_bus, linha + 8, 9);
+        c_bus[9] = '\0';
+
+        strncpy(b_bus, linha + 17, 4);
+        b_bus[4] = '\0';
+
+        // 🔵 Sinais da ULA
+        int SLL8 = controle[0] - '0';
+        int SRA1 = controle[1] - '0';
+        int F0   = controle[2] - '0';
+        int F1   = controle[3] - '0';
+        int ENA  = controle[4] - '0';
+        int ENB  = controle[5] - '0';
+        int INVA = controle[6] - '0';
+        int INC  = controle[7] - '0';
+
+        // 🔵 B BUS (decodificador)
+        int B = 0;
+        int seletor = strtol(b_bus, NULL, 2);
+
+        switch(seletor) {
+            case 0: B = mdr; break;
+            case 1: B = pc; break;
+            case 2: B = mbr; break;
+            case 3: B = mbr; break; // simplificado
+            case 4: B = sp; break;
+            case 5: B = lv; break;
+            case 6: B = cpp; break;
+            case 7: B = tos; break;
+            case 8: B = opc; break;
+        }
+
+        // 🔵 Entrada A da ULA
+        int A = h;
+
         int carry;
         int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
 
-        // 🟢 PASSO 7 — Atualização de A
-        int LogA = A; // valor antigo de A
-        A = S;
+        int Sd = S;
 
-        printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, LogA, B, S, carry);
+        // 🔵 C BUS (escrita nos registradores)
+        for (int i = 0; i < 9; i++) {
+            if (c_bus[i] == '1') {
+                switch(8 - i) {
+                    case 8: h = Sd; break;
+                    case 7: opc = Sd; break;
+                    case 6: tos = Sd; break;
+                    case 5: cpp = Sd; break;
+                    case 4: lv = Sd; break;
+                    case 3: sp = Sd; break;
+                    case 2: pc = Sd; break;
+                    case 1: mdr = Sd; break;
+                    case 0: mar = Sd; break;
+                }
+            }
+        }
 
-        fprintf(log_file, "Cycle: %d\n", PC);
-        fprintf(log_file, "PC: %d\n", PC);
-        fprintf(log_file, "IR: %s\n", IR);
-        fprintf(log_file, "A: %d\n", LogA);
-        fprintf(log_file, "B: %d\n", B);
-        fprintf(log_file, "S: %d\n", S);
-        fprintf(log_file, "Carry: %d\n", carry);
-        fprintf(log_file, "----------------------\n");
+        // 🔵 LOG
+        printf("\nCiclo %d | IR: %s\n", ciclo, IR);
+        printf("B selecionado: %d\n", seletor);
+        printf("A(H): %d | B: %d | S: %d | Carry: %d\n", A, B, S, carry);
 
-        PC++;
+        fprintf(log, "Ciclo %d\n", ciclo);
+        fprintf(log, "IR: %s\n", IR);
+        fprintf(log, "H=%d OPC=%d TOS=%d CPP=%d LV=%d SP=%d PC=%d MDR=%d MAR=%d\n",
+                h, opc, tos, cpp, lv, sp, pc, mdr, mar);
+        fprintf(log, "----------------------\n");
+
+        ciclo++;
     }
 
-    fclose(file);
-    fclose(log_file);
+    fclose(prog);
+    fclose(log);
 
-    printf("\nProcessamento concluido. Verifique o arquivo 'saida_etapa1.txt'.\n");
+    printf("\nExecucao concluida.\n");
+
     return 0;
 }
