@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-// 🟢 PASSO 5 — Função da ULA
+// PASSO 5 — Função da ULA
 int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
 
     int A_in = A;
@@ -45,7 +46,11 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
 
 int main() {
 
-    FILE *file = fopen("programa_etapa1.txt", "r");
+    // Registradores
+    int mar = 0, mdr = 0, pc = 0, mbr = 0;
+    int sp = 0, lv = 0, cpp = 0, tos = 0, opc = 0, h = 0;
+
+    FILE *file = fopen("programa_etapa2_tarefa2.txt", "r");
     FILE *log_file = fopen("saida_etapa1.txt", "w");
 
     if (file == NULL) {
@@ -58,12 +63,39 @@ int main() {
         return 1;
     }
 
-    char linha[10];
+    char linha[30];
 
-    // 🟢 Valores iniciais (conforme enunciado)
+    // Valores iniciais (conforme enunciado)
     int A = -1;
     int B = 1;
     int PC = 0;
+
+    // Leitura de dados, pode conter erros ainda
+    FILE *reg_file = fopen("registradores_etapa2_tarefa2.txt", "r");
+
+    if (reg_file == NULL) {
+        printf("Erro ao abrir arquivo de registradores\n");
+        return 1;
+    }
+
+    char nome[10];
+    int valor;
+
+    while (fscanf(reg_file, "%s %d", nome, &valor) != EOF) {
+
+        if (strcmp(nome, "MAR") == 0) mar = valor;
+        else if (strcmp(nome, "MDR") == 0) mdr = valor;
+        else if (strcmp(nome, "PC") == 0) pc = valor;
+        else if (strcmp(nome, "MBR") == 0) mbr = valor;
+        else if (strcmp(nome, "SP") == 0) sp = valor;
+        else if (strcmp(nome, "LV") == 0) lv = valor;
+        else if (strcmp(nome, "CPP") == 0) cpp = valor;
+        else if (strcmp(nome, "TOS") == 0) tos = valor;
+        else if (strcmp(nome, "OPC") == 0) opc = valor;
+        else if (strcmp(nome, "H") == 0) h = valor;
+    }
+
+    fclose(reg_file);
 
     while (fgets(linha, sizeof(linha), file)) {
 
