@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-// 🟢 ULA
+// ULA
 int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
 
     int A_in = A & 1;
@@ -45,11 +45,11 @@ int main() {
         return 1;
     }
 
-    // 🔵 REGISTRADORES
+    //Registradores
     int mar=0, mdr=0, pc=0, mbr=0;
     int sp=0, lv=0, cpp=0, tos=0, opc=0, h=0;
 
-    // 🔵 LEITURA DOS REGISTRADORES
+    //Leitura Dos Registradores
     char nome[10];
     int valor;
 
@@ -79,7 +79,7 @@ int main() {
         char IR[30];
         strcpy(IR, linha);
 
-        // 🔵 ETAPA 5 — Separar instrução
+        //Separar Instrução
         char controle[9], c_bus[10], b_bus[5];
 
         strncpy(controle, linha, 8);
@@ -91,9 +91,9 @@ int main() {
         strncpy(b_bus, linha + 17, 4);
         b_bus[4] = '\0';
 
-        // 🔵 Sinais da ULA
-        int SLL8 = controle[0] - '0';
-        int SRA1 = controle[1] - '0';
+        //Sinais da ULA
+        int SLL8 = controle[0] - '0'; // ainda n implementado
+        int SRA1 = controle[1] - '0'; // ainda n implementado
         int F0   = controle[2] - '0';
         int F1   = controle[3] - '0';
         int ENA  = controle[4] - '0';
@@ -101,7 +101,7 @@ int main() {
         int INVA = controle[6] - '0';
         int INC  = controle[7] - '0';
 
-        // 🔵 B BUS (decodificador)
+        //B BUS
         int B = 0;
         int seletor = strtol(b_bus, NULL, 2);
 
@@ -117,7 +117,7 @@ int main() {
             case 8: B = opc; break;
         }
 
-        // 🔵 Entrada A da ULA
+        // Entrada A da ULA
         int A = h;
 
         int carry;
@@ -125,7 +125,7 @@ int main() {
 
         int Sd = S;
 
-        // 🔵 C BUS (escrita nos registradores)
+        //C BUS (escrita nos registradores)
         for (int i = 0; i < 9; i++) {
             if (c_bus[i] == '1') {
                 switch(8 - i) {
@@ -142,7 +142,7 @@ int main() {
             }
         }
 
-        // 🔵 LOG
+        // LOG (ainda pode melhorar)
         printf("\nCiclo %d | IR: %s\n", ciclo, IR);
         printf("B selecionado: %d\n", seletor);
         printf("A(H): %d | B: %d | S: %d | Carry: %d\n", A, B, S, carry);
