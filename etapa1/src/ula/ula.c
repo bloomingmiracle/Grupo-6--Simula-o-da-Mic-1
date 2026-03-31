@@ -2,17 +2,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-// ULA
+// ULA (32 bits correta)
 int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
 
-    int A_in = A & 1;
-    int B_in = B & 1;
+    int A_in = A;
+    int B_in = B;
     int S = 0;
 
     if (!ENA) A_in = 0;
     if (!ENB) B_in = 0;
 
-    if (INVA) A_in = (~A_in) & 1;
+    if (INVA) A_in = ~A_in;
 
     if (F0 == 0 && F1 == 0) {
         S = A_in & B_in;
@@ -21,15 +21,20 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
         S = A_in | B_in;
     }
     else if (F0 == 1 && F1 == 0) {
-        S = (~B_in) & 1;
+        S = ~B_in;
     }
     else if (F0 == 1 && F1 == 1) {
-        S = A_in + B_in + INC;
+        S = A_in + B_in;
     }
 
-    *carry = (F0 == 1 && F1 == 1) ? (S > 1) : 0;
+    if (INC) {
+        S = S + 1;
+    }
 
-    S &= 1;
+    *carry = 0;
+    if (F0 == 1 && F1 == 1) {
+        *carry = (A_in + B_in + INC) < A_in;
+    }
 
     return S;
 }
@@ -45,11 +50,11 @@ int main() {
         return 1;
     }
 
-    //Registradores
+    // Registradores
     int mar=0, mdr=0, pc=0, mbr=0;
     int sp=0, lv=0, cpp=0, tos=0, opc=0, h=0;
 
-    //Leitura Dos Registradores
+    // Leitura dos registradores
     char nome[10];
     int valor;
 
@@ -79,7 +84,7 @@ int main() {
         char IR[30];
         strcpy(IR, linha);
 
-        //Separar Instrução
+        // Separar instrução
         char controle[9], c_bus[10], b_bus[5];
 
         strncpy(controle, linha, 8);
@@ -91,9 +96,9 @@ int main() {
         strncpy(b_bus, linha + 17, 4);
         b_bus[4] = '\0';
 
-        //Sinais da ULA
-        int SLL8 = controle[0] - '0'; // ainda n implementado
-        int SRA1 = controle[1] - '0'; // ainda n implementado
+        // Sinais
+        int SLL8 = controle[0] - '0';
+        int SRA1 = controle[1] - '0';
         int F0   = controle[2] - '0';
         int F1   = controle[3] - '0';
         int ENA  = controle[4] - '0';
@@ -101,7 +106,13 @@ int main() {
         int INVA = controle[6] - '0';
         int INC  = controle[7] - '0';
 
-        //B BUS
+        // Validação
+        if (SLL8 == 1 && SRA1 == 1) {
+            printf("> Error, invalid control signals.\n");
+            continue;
+        }
+
+        // B BUS
         int B = 0;
         int seletor = strtol(b_bus, NULL, 2);
 
@@ -109,7 +120,7 @@ int main() {
             case 0: B = mdr; break;
             case 1: B = pc; break;
             case 2: B = mbr; break;
-            case 3: B = mbr; break; // simplificado
+            case 3: B = mbr; break;
             case 4: B = sp; break;
             case 5: B = lv; break;
             case 6: B = cpp; break;
@@ -117,15 +128,31 @@ int main() {
             case 8: B = opc; break;
         }
 
-        // Entrada A da ULA
         int A = h;
 
+        // PRINT BEFORE
+        printf("\n==============================\n");
+        printf("Ciclo %d\n", ciclo);
+        printf("IR: %s\n", IR);
+
+        printf("\n> Registers BEFORE\n");
+        printf("MAR=%d MDR=%d PC=%d MBR=%d\n", mar, mdr, pc, mbr);
+        printf("SP=%d LV=%d CPP=%d TOS=%d OPC=%d H=%d\n",
+               sp, lv, cpp, tos, opc, h);
+
+        // ULA
         int carry;
         int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
 
+        // SHIFT
         int Sd = S;
+        if (SLL8 == 1) Sd = S << 8;
+        else if (SRA1 == 1) Sd = S >> 1;
 
-        //C BUS (escrita nos registradores)
+        int n = (Sd < 0) ? 1 : 0;
+        int z = (Sd == 0) ? 1 : 0;
+
+        // C BUS
         for (int i = 0; i < 9; i++) {
             if (c_bus[i] == '1') {
                 switch(8 - i) {
@@ -142,24 +169,22 @@ int main() {
             }
         }
 
-        // LOG (ainda pode melhorar)
-        printf("\nCiclo %d | IR: %s\n", ciclo, IR);
-        printf("B selecionado: %d\n", seletor);
-        printf("A(H): %d | B: %d | S: %d | Carry: %d\n", A, B, S, carry);
+        // PRINT AFTER
+        printf("\n> Registers AFTER\n");
+        printf("MAR=%d MDR=%d PC=%d MBR=%d\n", mar, mdr, pc, mbr);
+        printf("SP=%d LV=%d CPP=%d TOS=%d OPC=%d H=%d\n",
+               sp, lv, cpp, tos, opc, h);
 
-        fprintf(log, "Ciclo %d\n", ciclo);
-        fprintf(log, "IR: %s\n", IR);
-        fprintf(log, "H=%d OPC=%d TOS=%d CPP=%d LV=%d SP=%d PC=%d MDR=%d MAR=%d\n",
-                h, opc, tos, cpp, lv, sp, pc, mdr, mar);
-        fprintf(log, "----------------------\n");
+        printf("A(H)=%d | B=%d | S=%d | Sd=%d | N=%d | Z=%d | Carry=%d\n",
+               A, B, S, Sd, n, z, carry);
 
         ciclo++;
     }
 
+    printf("\nNo more lines, EOP.\n");
+
     fclose(prog);
     fclose(log);
-
-    printf("\nExecucao concluida.\n");
 
     return 0;
 }
