@@ -64,7 +64,7 @@ int main() {
 
     print_bin("b", b);
     print_bin("a", a);
-    printf("\nInicio do Programa\n");
+    printf("\nStart of Program\n");
 
     while (fgets(linha, sizeof(linha), file)) {
 
