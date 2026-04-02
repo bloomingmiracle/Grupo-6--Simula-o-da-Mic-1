@@ -36,12 +36,89 @@ int main() {
     }
 
     fclose(dados);
-
-    // 🔍 TESTE
-    printf("Memoria carregada:\n");
-    for (int j = 0; j < 16; j++) {
-        printf("memoria[%d] = %d\n", j, memoria[j]);
+    
+    FILE *regs_file = fopen("registradores_etapa3_tarefa1.txt", "r");
+    if (regs_file == NULL) {
+        printf("Erro ao abrir arquivo de registradores\n");
+        return 1;
     }
+
+    int mar = 0, mdr = 0, pc = 0, mbr = 0, sp = 0;
+    int lv = 0, cpp = 0, tos = 0, opc = 0, h = 0;
+
+    char reg_name[10];
+    char reg_val[40];
+
+    while (fscanf(regs_file, "%s = %s", reg_name, reg_val) == 2) {
+        if (strcmp(reg_name, "mar") == 0) mar = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "mdr") == 0) mdr = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "pc") == 0) pc = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "mbr") == 0) mbr = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "sp") == 0) sp = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "lv") == 0) lv = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "cpp") == 0) cpp = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "tos") == 0) tos = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "opc") == 0) opc = bin_to_int(reg_val);
+        else if (strcmp(reg_name, "h") == 0) h = bin_to_int(reg_val);
+    }
+    fclose(regs_file);
+
+
+    printf("\n*******************************\n");
+    printf("Estado inicial da memoria\n");
+    printf("*******************************\n");
+
+    for (int j = 0; j < 16; j++) {
+        for (int b = 31; b >= 0; b--) {
+            printf("%d", (memoria[j] >> b) & 1);
+        }
+        printf("\n");
+    }
+
+    printf("\n*******************************\n");
+    printf("Estado inicial do registrador\n");
+    printf("*******************************\n");
+
+
+    printf("mar = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (mar >> b) & 1);
+    printf("\n");
+
+    printf("mdr = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (mdr >> b) & 1);
+    printf("\n");
+
+    printf("pc = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (pc >> b) & 1);
+    printf("\n");
+
+    printf("mbr = ");
+    for (int b = 7; b >= 0; b--) printf("%d", (mbr >> b) & 1);
+    printf("\n");
+
+    printf("sp = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (sp >> b) & 1);
+    printf("\n");
+
+    printf("lv = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (lv >> b) & 1);
+    printf("\n");
+
+    printf("cpp = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (cpp >> b) & 1);
+    printf("\n");
+
+    printf("tos = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (tos >> b) & 1);
+    printf("\n");
+
+    printf("opc = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (opc >> b) & 1);
+    printf("\n");
+
+    printf("h = ");
+    for (int b = 31; b >= 0; b--) printf("%d", (h >> b) & 1);
+    printf("\n");
 
     return 0;
 }
