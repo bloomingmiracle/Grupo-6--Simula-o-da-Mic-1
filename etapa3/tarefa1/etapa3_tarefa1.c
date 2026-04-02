@@ -37,7 +37,7 @@ int main() {
 
     fclose(dados);
 
-    // 🔍 TESTE (pode remover depois)
+    // 🔍 TESTE
     printf("Memoria carregada:\n");
     for (int j = 0; j < 16; j++) {
         printf("memoria[%d] = %d\n", j, memoria[j]);
