@@ -112,9 +112,8 @@ int main() {
     for (int b = 31; b >= 0; b--) printf("%d", (h >> b) & 1);
     printf("\n");
 
-    // ================================
-    // 🔥 PASSOS 6, 7 e 8 (ADICIONADOS)
-    // ================================
+    
+    // PASSOS 6, 7 e 8 (ADICIONADOS)
 
     FILE *micro = fopen("microinstrucoes_etapa3_tarefa1.txt", "r");
 
