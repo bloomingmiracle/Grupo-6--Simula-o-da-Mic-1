@@ -23,15 +23,9 @@ int main() {
     char linha[40];
     int i = 0;
 
-    // Ler linha por linha
     while (fgets(linha, sizeof(linha), dados) && i < 16) {
-
-        // Remover quebra de linha
         linha[strcspn(linha, "\n")] = 0;
-
-        // Converter binário para inteiro
         memoria[i] = bin_to_int(linha);
-
         i++;
     }
 
@@ -63,7 +57,6 @@ int main() {
     }
     fclose(regs_file);
 
-
     printf("\n*******************************\n");
     printf("Estado inicial da memoria\n");
     printf("*******************************\n");
@@ -78,7 +71,6 @@ int main() {
     printf("\n*******************************\n");
     printf("Estado inicial do registrador\n");
     printf("*******************************\n");
-
 
     printf("mar = ");
     for (int b = 31; b >= 0; b--) printf("%d", (mar >> b) & 1);
@@ -119,6 +111,65 @@ int main() {
     printf("h = ");
     for (int b = 31; b >= 0; b--) printf("%d", (h >> b) & 1);
     printf("\n");
+
+    // ================================
+    // 🔥 PASSOS 6, 7 e 8 (ADICIONADOS)
+    // ================================
+
+    FILE *micro = fopen("microinstrucoes_etapa3_tarefa1.txt", "r");
+
+    if (micro == NULL) {
+        printf("Erro ao abrir microinstrucoes\n");
+        return 1;
+    }
+
+    char instrucao[50];
+    int ciclo = 0;
+
+    while (fgets(instrucao, sizeof(instrucao), micro)) {
+
+        instrucao[strcspn(instrucao, "\n")] = 0;
+
+        if (strlen(instrucao) == 0) continue;
+
+        printf("\n============================\n");
+        printf("Ciclo %d\n", ciclo);
+        printf("IR: %s\n", instrucao);
+
+        // BEFORE
+        printf("\n> Registradores ANTES\n");
+        printf("MAR=%d MDR=%d PC=%d MBR=%d\n", mar, mdr, pc, mbr);
+        printf("SP=%d LV=%d CPP=%d TOS=%d OPC=%d H=%d\n",
+               sp, lv, cpp, tos, opc, h);
+
+
+        // PASSO 6 — SIMULAÇÃO DE MEMÓRIA ()
+        //  exemplo
+        mdr = memoria[mar];
+
+        // escrita exemplo (comentado por enquanto)
+        // memoria[mar] = mdr;
+
+        // AFTER
+        printf("\n> Registradores DEPOIS\n");
+        printf("MAR=%d MDR=%d PC=%d MBR=%d\n", mar, mdr, pc, mbr);
+        printf("SP=%d LV=%d CPP=%d TOS=%d OPC=%d H=%d\n",
+               sp, lv, cpp, tos, opc, h);
+
+        // PASSO 7 — MEMÓRIA
+        printf("\nMemoria:\n");
+        for (int k = 0; k < 16; k++) {
+            printf("[%d]=%d ", k, memoria[k]);
+        }
+        printf("\n");
+
+        ciclo++;
+    }
+
+    // PASSO 8 — FIM
+    printf("\nNo more lines, EOP.\n");
+
+    fclose(micro);
 
     return 0;
 }
