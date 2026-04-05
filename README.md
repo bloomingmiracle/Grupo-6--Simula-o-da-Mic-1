@@ -45,7 +45,7 @@ mic1-simulador
 │   └── tarefa 2
 │
 ├── etapa3
-│
+│  ├── tarrefa 1
 └── relatorio
 ```
 
