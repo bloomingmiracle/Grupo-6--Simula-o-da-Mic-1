@@ -41,11 +41,11 @@ mic1-simulador
 │   └── output
 │
 ├── etapa2
-│   ├── tarrefa 1
+│   ├── tarefa 1
 │   └── tarefa 2
 │
 ├── etapa3
-│  ├── tarrefa 1
+│  ├── tarefa 1
 └── relatorio
 ```
 
