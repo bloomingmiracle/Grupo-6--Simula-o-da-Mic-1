@@ -1,0 +1,5 @@
+Instrução:
+11111100000000000110000
+
+esperado:
+MBR e H recebem valor dos 8 primeiros bits

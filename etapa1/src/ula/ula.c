@@ -24,14 +24,9 @@ void carregar_memoria() {
 // Função da ULA
 int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
 
-    int A_in = ENA ? A : 0;
+    int A_in = ENA ? A : 0; // "ena ? A : 0" é o mesmo que: "if(ena) {A_in = A} else {A_in = 0}"
     int B_in = ENB ? B : 0;
-    if (INVA) A_in = ~A_in;
     int S = 0;
-
-    // ENA / ENB
-    if (!ENA) A_in = 0;
-    if (!ENB) B_in = 0;
 
     // INVA
     if (INVA) A_in = ~A_in;
@@ -51,14 +46,13 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
     }
 
     // INC
-    if (INC) {
-        S = S + 1;
-    }
+    if (INC) S++;
 
     // Carry (forma simplificada)
-    *carry = 0;
     if (F0 == 1 && F1 == 1) {
         *carry = (A_in + B_in + INC) > 1;
+    } else {
+        *carry = 0;
     }
 
     return S;
@@ -112,99 +106,137 @@ int main() {
     char linha[40];
     int ciclo = 0;
 
+    char *b_nome[] = {"MDR","PC","MBR","MBRU","SP","LV","CPP","TOS","OPC"};
+    char *c_nome[] = {"MAR","MDR","PC","SP","LV","CPP","TOS","OPC","H"};
+
+
     while (fgets(linha, sizeof(linha), file)) {
 
         linha[strcspn(linha, "\n")] = 0;
         if (strlen(linha) == 0) continue;
 
+
+        // salvar estado anterior (mostrar antes e dps)
+        int h_old=h, opc_old=opc, tos_old=tos, cpp_old=cpp;
+        int lv_old=lv, sp_old=sp, pc_old=pc, mdr_old=mdr, mar_old=mar;
+
         printf("\n============================\n");
         printf("CICLO %d\n", ciclo);
         printf("Instrucao: %s\n", linha);
 
-        // 🔹 ULA (8 bits)
-        int SLL8 = linha[0] - '0';
-        int SRA1 = linha[1] - '0';
-        int F0   = linha[2] - '0';
-        int F1   = linha[3] - '0';
-        int ENA  = linha[4] - '0';
-        int ENB  = linha[5] - '0';
-        int INVA = linha[6] - '0';
-        int INC  = linha[7] - '0';
+        // decodificação da instrução
+        int SLL8=linha[0]-'0', SRA1=linha[1]-'0';
+        int F0=linha[2]-'0', F1=linha[3]-'0';
+        int ENA=linha[4]-'0', ENB=linha[5]-'0';
+        int INVA=linha[6]-'0', INC=linha[7]-'0';
 
-        // 🔹 C-bus (9 bits)
+        // entrada C
         int C[9];
-        for(int i = 0; i < 9; i++)
-            C[i] = linha[8 + i] - '0';
+        for(int i=0;i<9;i++) C[i]=linha[8+i]-'0';
 
-        // 🔹 Memória
-        int WRITE = linha[17] - '0';
-        int READ  = linha[18] - '0';
+        int WRITE=linha[17]-'0', READ=linha[18]-'0';
 
-        // 🔹 B-bus
-        int Bsel = (linha[19]-'0')*8 +
-                   (linha[20]-'0')*4 +
-                   (linha[21]-'0')*2 +
-                   (linha[22]-'0');
+        int Bsel=(linha[19]-'0')*8+(linha[20]-'0')*4+
+                 (linha[21]-'0')*2+(linha[22]-'0');
 
-        // 🔹 Seleção do B
-        int B;
-        switch(Bsel) {
-            case 0: B = mdr; break;
-            case 1: B = pc; break;
-            case 2: B = mbr; break;
-            case 3: B = mbr; break;
-            case 4: B = sp; break;
-            case 5: B = lv; break;
-            case 6: B = cpp; break;
-            case 7: B = tos; break;
-            case 8: B = opc; break;
-            default: B = 0;
+        // FETCH especial
+        if (WRITE && READ) {
+            int valor=0;
+            for(int i=0;i<8;i++)
+                valor=(valor<<1)|(linha[i]-'0');
+
+            mbr = valor;
+            h = valor;
+
+            fprintf(log_file,"CICLO %d\n", ciclo);
+            fprintf(log_file,"FETCH: MBR=%d H=%d\n", mbr, h);
+            fprintf(log_file,"----------------------\n");
+
+            ciclo++;
+            continue;
         }
+
+        // B-bus
+        int B;
+        switch(Bsel){
+            case 0: B=mdr; break;
+            case 1: B=pc; break;
+            case 2: B=(int)((signed char)mbr); break;
+            case 3: B=(unsigned char)mbr; break;
+            case 4: B=sp; break;
+            case 5: B=lv; break;
+            case 6: B=cpp; break;
+            case 7: B=tos; break;
+            case 8: B=opc; break;
+            default: B=0;
+        }
+
 
         // ULA
         int carry;
-        int S = ula(h, B, F0, F1, ENA, ENB, INVA, INC, &carry);
+        int S = ula(h, B, F0,F1,ENA,ENB,INVA,INC,&carry);
 
-        // SHIFT
-        int Sd = S;
-        if (SLL8) Sd = S << 8;
-        if (SRA1) Sd = S >> 1;
+        //shift
+        int Sd=S;
+        if (SLL8) Sd=S<<8;
+        else if (SRA1) Sd=S>>1;
 
-        // Atualização C-bus
-        if (C[8]) h   = Sd;
-        if (C[7]) opc = Sd;
-        if (C[6]) tos = Sd;
-        if (C[5]) cpp = Sd;
-        if (C[4]) lv  = Sd;
-        if (C[3]) sp  = Sd;
-        if (C[2]) pc  = Sd;
-        if (C[1]) mdr = Sd;
-        if (C[0]) mar = Sd;
+        // C-bus
+        if (C[8]) h=Sd;
+        if (C[7]) opc=Sd;
+        if (C[6]) tos=Sd;
+        if (C[5]) cpp=Sd;
+        if (C[4]) lv=Sd;
+        if (C[3]) sp=Sd;
+        if (C[2]) pc=Sd;
+        if (C[1]) mdr=Sd;
+        if (C[0]) mar=Sd;
 
-        // MEMÓRIA (DEPOIS DO C-BUS)
-        if (WRITE) {
-            memoria[mar] = mdr;
+        // Memória
+        if (mar>=0 && mar<8){
+            if (WRITE) memoria[mar]=mdr;
+            if (READ)  mdr=memoria[mar];
         }
 
-        if (READ) {
-            mdr = memoria[mar];
-        }
 
-        // 🔹 LOG
-        printf("H=%d OPC=%d TOS=%d CPP=%d LV=%d SP=%d PC=%d MDR=%d MAR=%d\n",
-               h, opc, tos, cpp, lv, sp, pc, mdr, mar);
+        // LOG - Inicio
+        fprintf(log_file,"CICLO %d\n",ciclo);
 
-        printf("B veio de: %d | S=%d | Sd=%d\n", Bsel, S, Sd);
+        // ANTES
+        fprintf(log_file,"ANTES: ");
+        fprintf(log_file,
+        "H=%d OPC=%d TOS=%d CPP=%d LV=%d SP=%d PC=%d MDR=%d MAR=%d\n",
+        h_old, opc_old, tos_old, cpp_old, lv_old, sp_old, pc_old, mdr_old, mar_old);
 
-        printf("Memoria:\n");
+        // DEPOIS
+        fprintf(log_file,"DEPOIS: ");
+        fprintf(log_file,
+        "H=%d OPC=%d TOS=%d CPP=%d LV=%d SP=%d PC=%d MDR=%d MAR=%d\n",
+        h, opc, tos, cpp, lv, sp, pc, mdr, mar);
+
+        // B-bus
+        fprintf(log_file,"B-bus: %s\n",
+        (Bsel<=8)?b_nome[Bsel]:"INVALIDO");
+
+        // C-bus
+        fprintf(log_file,"C-bus: ");
+        for(int i=0;i<9;i++)
+            if(C[i]) fprintf(log_file,"%s ", c_nome[i]);
+        fprintf(log_file,"\n");
+
+        // Memória
+        fprintf(log_file,"Memoria: ");
         for(int i=0;i<8;i++)
-            printf("[%d]=%d ", i, memoria[i]);
-        printf("\n");
+            fprintf(log_file,"[%d]=%d ", i, memoria[i]);
+
+        fprintf(log_file,"\n----------------------\n"); // separador
+        //Log - Fim
 
         ciclo++;
     }
 
     fclose(file);
+    fclose(log_file);
 
     printf("\nExecucao concluida.\n");
     return 0;

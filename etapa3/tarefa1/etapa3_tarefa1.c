@@ -2,40 +2,65 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Função para converter binário (string) para inteiro
+// ============================
+// Conversões binárias
+// ============================
+
 int bin_to_int(char *bin) {
     return (int)strtol(bin, NULL, 2);
 }
 
-// Função para imprimir inteiro em binário (32 bits)
 void print_bin32(int value) {
-    for (int i = 31; i >= 0; i--) {
+    for (int i = 31; i >= 0; i--)
         printf("%d", (value >> i) & 1);
-    }
 }
 
-// Função para imprimir inteiro em binário (8 bits)
 void print_bin8(int value) {
-    for (int i = 7; i >= 0; i--) {
+    for (int i = 7; i >= 0; i--)
         printf("%d", (value >> i) & 1);
-    }
 }
+
+// ============================
+// ULA
+// ============================
+
+int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
+
+    int A_in = ENA ? A : 0;
+    int B_in = ENB ? B : 0;
+
+    if (INVA) A_in = ~A_in;
+
+    int S = 0;
+
+    if (F0 == 0 && F1 == 0) S = A_in & B_in;
+    else if (F0 == 0 && F1 == 1) S = A_in | B_in;
+    else if (F0 == 1 && F1 == 0) S = ~B_in;
+    else if (F0 == 1 && F1 == 1) S = A_in + B_in;
+
+    if (INC) S++;
+
+    *carry = (F0 == 1 && F1 == 1) ? (A_in + B_in + INC > 1) : 0;
+
+    return S;
+}
+
+// ============================
+// MAIN
+// ============================
 
 int main() {
 
-    // ============================
-    // PASSO 1 — Ler dados (memória)
-    // ============================
+    // Memória
+    int memoria[16];
 
     FILE *dados = fopen("dados_etapa3_tarefa1.txt", "r");
-
-    if (dados == NULL) {
-        printf("Erro ao abrir arquivo de dados\n");
+    if (!dados) {
+        printf("Erro ao abrir dados\n");
         return 1;
     }
 
-    int memoria[16];
-    char linha[40];
+    char linha[50];
     int i = 0;
 
     while (fgets(linha, sizeof(linha), dados) && i < 16) {
@@ -46,139 +71,157 @@ int main() {
 
     fclose(dados);
 
-    // ============================
-    // PASSO 3 — Ler registradores
-    // ============================
-
-    FILE *regs_file = fopen("registradores_etapa3_tarefa1.txt", "r");
-
-    if (regs_file == NULL) {
-        printf("Erro ao abrir arquivo de registradores\n");
-        return 1;
-    }
-
+    // Registradores
     int mar=0, mdr=0, pc=0, mbr=0;
     int sp=0, lv=0, cpp=0, tos=0, opc=0, h=0;
 
-    char reg_name[10];
-    char reg_val[40];
+    FILE *regs = fopen("registradores_etapa3_tarefa1.txt", "r");
+    char nome[10], valor[40];
 
-    while (fscanf(regs_file, "%s = %s", reg_name, reg_val) == 2) {
-        if (strcmp(reg_name, "mar") == 0) mar = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "mdr") == 0) mdr = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "pc") == 0) pc = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "mbr") == 0) mbr = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "sp") == 0) sp = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "lv") == 0) lv = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "cpp") == 0) cpp = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "tos") == 0) tos = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "opc") == 0) opc = bin_to_int(reg_val);
-        else if (strcmp(reg_name, "h") == 0) h = bin_to_int(reg_val);
+    while (fscanf(regs, "%s = %s", nome, valor) == 2) {
+        if (!strcmp(nome,"mar")) mar = bin_to_int(valor);
+        else if (!strcmp(nome,"mdr")) mdr = bin_to_int(valor);
+        else if (!strcmp(nome,"pc")) pc = bin_to_int(valor);
+        else if (!strcmp(nome,"mbr")) mbr = bin_to_int(valor);
+        else if (!strcmp(nome,"sp")) sp = bin_to_int(valor);
+        else if (!strcmp(nome,"lv")) lv = bin_to_int(valor);
+        else if (!strcmp(nome,"cpp")) cpp = bin_to_int(valor);
+        else if (!strcmp(nome,"tos")) tos = bin_to_int(valor);
+        else if (!strcmp(nome,"opc")) opc = bin_to_int(valor);
+        else if (!strcmp(nome,"h")) h = bin_to_int(valor);
     }
 
-    fclose(regs_file);
+    fclose(regs);
 
-    // ============================
-    // PASSO 4 — Estado inicial
-    // ============================
+    // Estado inicial
+    printf("==== INITIAL STATE ====\n");
 
-    printf("============================================================\n");
-    printf("Initial memory state\n");
-    printf("*******************************\n");
-
-    for (int j = 0; j < 16; j++) {
+    printf("Memory:\n");
+    for(int j=0;j<16;j++){
         print_bin32(memoria[j]);
         printf("\n");
     }
 
-    printf("*******************************\n");
+    printf("\nRegisters:\n");
+    printf("H="); print_bin32(h); printf("\n");
 
-    printf("Initial register state\n");
-    printf("*******************************\n");
-
-    printf("mar = "); print_bin32(mar); printf("\n");
-    printf("mdr = "); print_bin32(mdr); printf("\n");
-    printf("pc = "); print_bin32(pc); printf("\n");
-    printf("mbr = "); print_bin8(mbr); printf("\n");
-    printf("sp = "); print_bin32(sp); printf("\n");
-    printf("lv = "); print_bin32(lv); printf("\n");
-    printf("cpp = "); print_bin32(cpp); printf("\n");
-    printf("tos = "); print_bin32(tos); printf("\n");
-    printf("opc = "); print_bin32(opc); printf("\n");
-    printf("h = "); print_bin32(h); printf("\n");
-
-    printf("============================================================\n");
-    printf("Start of Program\n");
-    printf("============================================================\n");
-
-    // ============================
-    // PASSOS 6, 7 e 8 (estrutura)
-    // ============================
-
+    // Microinstruções
     FILE *micro = fopen("microinstrucoes_etapa3_tarefa1.txt", "r");
-
-    if (micro == NULL) {
-        printf("Erro ao abrir microinstrucoes\n");
-        return 1;
-    }
-
-    char instrucao[50];
     int ciclo = 1;
 
-    while (fgets(instrucao, sizeof(instrucao), micro)) {
+    char *b_nome[] = {"MDR","PC","MBR","MBRU","SP","LV","CPP","TOS","OPC"};
+    char *c_nome[] = {"MAR","MDR","PC","SP","LV","CPP","TOS","OPC","H"};
 
-        instrucao[strcspn(instrucao, "\n")] = 0;
+    while (fgets(linha, sizeof(linha), micro)) {
 
-        if (strlen(instrucao) == 0) continue;
+        linha[strcspn(linha, "\n")] = 0;
+        if (!strlen(linha)) continue;
 
+        printf("\n============================\n");
         printf("Cycle %d\n", ciclo);
-        printf("IR: %s\n", instrucao);
+        printf("IR: %s\n", linha);
 
         // BEFORE
-        printf("\n> Registers before instruction\n");
-        printf("mar = "); print_bin32(mar); printf("\n");
-        printf("mdr = "); print_bin32(mdr); printf("\n");
-        printf("pc = "); print_bin32(pc); printf("\n");
-        printf("mbr = "); print_bin8(mbr); printf("\n");
-        printf("sp = "); print_bin32(sp); printf("\n");
-        printf("lv = "); print_bin32(lv); printf("\n");
-        printf("cpp = "); print_bin32(cpp); printf("\n");
-        printf("tos = "); print_bin32(tos); printf("\n");
-        printf("opc = "); print_bin32(opc); printf("\n");
-        printf("h = "); print_bin32(h); printf("\n");
+        printf("\n> BEFORE\n");
+        printf("H="); print_bin32(h); printf("\n");
+        printf("MDR="); print_bin32(mdr); printf("\n");
+        printf("MAR="); print_bin32(mar); printf("\n");
 
-        // (Ainda sem execução real — só estrutura)
+        // Decode
+        int SLL8=linha[0]-'0', SRA1=linha[1]-'0';
+        int F0=linha[2]-'0', F1=linha[3]-'0';
+        int ENA=linha[4]-'0', ENB=linha[5]-'0';
+        int INVA=linha[6]-'0', INC=linha[7]-'0';
+
+        int C[9];
+        for(int i=0;i<9;i++) C[i]=linha[8+i]-'0';
+
+        int WRITE=linha[17]-'0', READ=linha[18]-'0';
+
+        int Bsel=(linha[19]-'0')*8+(linha[20]-'0')*4+
+                 (linha[21]-'0')*2+(linha[22]-'0');
+
+        // FETCH
+        if (WRITE && READ) {
+            int valor=0;
+            for(int i=0;i<8;i++)
+                valor=(valor<<1)|(linha[i]-'0');
+
+            mbr = valor;
+            h = valor;
+
+            printf("FETCH executed\n");
+
+            ciclo++;
+            continue;
+        }
+
+        // B-bus
+        int B;
+        switch(Bsel){
+            case 0: B=mdr; break;
+            case 1: B=pc; break;
+            case 2: B=(signed char)mbr; break;
+            case 3: B=(unsigned char)mbr; break;
+            case 4: B=sp; break;
+            case 5: B=lv; break;
+            case 6: B=cpp; break;
+            case 7: B=tos; break;
+            case 8: B=opc; break;
+            default: B=0;
+        }
+
+        // ULA
+        int carry;
+        int S = ula(h, B, F0,F1,ENA,ENB,INVA,INC,&carry);
+
+        // SHIFT
+        int Sd=S;
+        if (SLL8) Sd=S<<8;
+        else if (SRA1) Sd=S>>1;
+
+        // C-bus
+        if (C[8]) h=Sd;
+        if (C[7]) opc=Sd;
+        if (C[6]) tos=Sd;
+        if (C[5]) cpp=Sd;
+        if (C[4]) lv=Sd;
+        if (C[3]) sp=Sd;
+        if (C[2]) pc=Sd;
+        if (C[1]) mdr=Sd;
+        if (C[0]) mar=Sd;
+
+        // Memória
+        if (mar>=0 && mar<16){
+            if (WRITE) memoria[mar]=mdr;
+            if (READ)  mdr=memoria[mar];
+        }
 
         // AFTER
-        printf("\n> Registers after instruction\n");
-        printf("mar = "); print_bin32(mar); printf("\n");
-        printf("mdr = "); print_bin32(mdr); printf("\n");
-        printf("pc = "); print_bin32(pc); printf("\n");
-        printf("mbr = "); print_bin8(mbr); printf("\n");
-        printf("sp = "); print_bin32(sp); printf("\n");
-        printf("lv = "); print_bin32(lv); printf("\n");
-        printf("cpp = "); print_bin32(cpp); printf("\n");
-        printf("tos = "); print_bin32(tos); printf("\n");
-        printf("opc = "); print_bin32(opc); printf("\n");
-        printf("h = "); print_bin32(h); printf("\n");
+        printf("\n> AFTER\n");
+        printf("H="); print_bin32(h); printf("\n");
+        printf("MDR="); print_bin32(mdr); printf("\n");
+        printf("MAR="); print_bin32(mar); printf("\n");
 
-        // PASSO 7 — Memória em binário (CORRIGIDO)
-        printf("\n> Memory after instruction\n");
-        printf("*******************************\n");
-        for (int k = 0; k < 16; k++) {
+        // Info datapath
+        printf("\nB-bus: %s\n", (Bsel<=8)?b_nome[Bsel]:"?");
+        printf("C-bus: ");
+        for(int i=0;i<9;i++)
+            if(C[i]) printf("%s ", c_nome[i]);
+        printf("\n");
+
+        // Memória
+        printf("\nMemory:\n");
+        for(int k=0;k<16;k++){
             print_bin32(memoria[k]);
             printf("\n");
         }
 
-        printf("============================================================\n");
-
         ciclo++;
     }
 
-    // PASSO 8
-    printf("No more lines, EOP.\n");
+    printf("\nNo more lines, EOP.\n");
 
     fclose(micro);
-
     return 0;
 }

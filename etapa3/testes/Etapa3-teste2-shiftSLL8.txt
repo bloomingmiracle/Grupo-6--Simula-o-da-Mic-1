@@ -1,0 +1,11 @@
+Registradores:
+h = 00000000000000000000000000000001
+
+Dados:
+0
+
+microinstrução:
+h = 00000000000000000000000000000001
+
+Resultado esperado:
+h = 1 << 8 = 256

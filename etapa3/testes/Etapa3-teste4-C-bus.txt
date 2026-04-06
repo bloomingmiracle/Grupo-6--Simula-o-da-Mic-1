@@ -1,0 +1,9 @@
+registradores:
+h = 00000000000000000000000000000101
+
+instrução:
+00111111100000000000000
+
+esperado:
+
+H, OPC, TOS... recebem o mesmo valor
