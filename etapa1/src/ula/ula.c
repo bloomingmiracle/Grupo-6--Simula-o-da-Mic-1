@@ -2,11 +2,31 @@
 #include <string.h>
 #include <stdlib.h>
 
-// PASSO 5 — Função da ULA
+// Memória
+int memoria[8];
+
+// Função para carregar memória
+void carregar_memoria() {
+    FILE *f = fopen("dados_etapa3_tarefa1.txt", "r");
+    if (!f) {
+        printf("Erro ao abrir memoria\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < 8; i++) {
+        fscanf(f, "%d", &memoria[i]);
+    }
+
+    fclose(f);
+}
+
+
+// Função da ULA
 int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *carry) {
 
-    int A_in = A;
-    int B_in = B;
+    int A_in = ENA ? A : 0;
+    int B_in = ENB ? B : 0;
+    if (INVA) A_in = ~A_in;
     int S = 0;
 
     // ENA / ENB
@@ -35,7 +55,7 @@ int ula(int A, int B, int F0, int F1, int ENA, int ENB, int INVA, int INC, int *
         S = S + 1;
     }
 
-    // Carry (forma simplificada para esta etapa)
+    // Carry (forma simplificada)
     *carry = 0;
     if (F0 == 1 && F1 == 1) {
         *carry = (A_in + B_in + INC) > 1;
@@ -50,31 +70,24 @@ int main() {
     int mar = 0, mdr = 0, pc = 0, mbr = 0;
     int sp = 0, lv = 0, cpp = 0, tos = 0, opc = 0, h = 0;
 
-    FILE *file = fopen("programa_etapa2_tarefa2.txt", "r");
-    FILE *log_file = fopen("saida_etapa1.txt", "w");
+    carregar_memoria();
 
-    if (file == NULL) {
-        printf("Erro ao abrir o arquivo de entrada\n");
+    FILE *file = fopen("microinstrucoes_etapa3_tarefa1.txt", "r");
+    if (!file) {
+        printf("Erro ao abrir microinstrucoes\n");
         return 1;
     }
+
+    FILE *log_file = fopen("saida_etapa3.txt", "w");
     if (log_file == NULL) {
         printf("Erro ao criar o arquivo de log\n");
         fclose(file);
         return 1;
     }
 
-    char linha[30];
-
-    // Valores iniciais (conforme enunciado)
-    int A = -1;
-    int B = 1;
-    int PC = 0;
-
-    // Leitura de dados, pode conter erros ainda
-    FILE *reg_file = fopen("registradores_etapa2_tarefa2.txt", "r");
-
-    if (reg_file == NULL) {
-        printf("Erro ao abrir arquivo de registradores\n");
+    FILE *reg_file = fopen("registradores_etapa3_tarefa1.txt", "r");
+    if (!reg_file) {
+        printf("Erro ao abrir registradores\n");
         return 1;
     }
 
@@ -82,7 +95,6 @@ int main() {
     int valor;
 
     while (fscanf(reg_file, "%s %d", nome, &valor) != EOF) {
-
         if (strcmp(nome, "MAR") == 0) mar = valor;
         else if (strcmp(nome, "MDR") == 0) mdr = valor;
         else if (strcmp(nome, "PC") == 0) pc = valor;
@@ -97,50 +109,103 @@ int main() {
 
     fclose(reg_file);
 
+    char linha[40];
+    int ciclo = 0;
+
     while (fgets(linha, sizeof(linha), file)) {
 
         linha[strcspn(linha, "\n")] = 0;
+        if (strlen(linha) == 0) continue;
 
-        if(strlen(linha) == 0) continue;
+        printf("\n============================\n");
+        printf("CICLO %d\n", ciclo);
+        printf("Instrucao: %s\n", linha);
 
-        char IR[10];
-        strcpy(IR, linha);
+        // 🔹 ULA (8 bits)
+        int SLL8 = linha[0] - '0';
+        int SRA1 = linha[1] - '0';
+        int F0   = linha[2] - '0';
+        int F1   = linha[3] - '0';
+        int ENA  = linha[4] - '0';
+        int ENB  = linha[5] - '0';
+        int INVA = linha[6] - '0';
+        int INC  = linha[7] - '0';
 
-        int F0 = linha[0] - '0';
-        int F1 = linha[1] - '0';
-        int ENA = linha[2] - '0';
-        int ENB = linha[3] - '0';
-        int INVA = linha[4] - '0';
-        int INC = linha[5] - '0';
+        // 🔹 C-bus (9 bits)
+        int C[9];
+        for(int i = 0; i < 9; i++)
+            C[i] = linha[8 + i] - '0';
 
-        printf("\nInstrucao: %s", linha);
-        printf("\nF0=%d F1=%d ENA=%d ENB=%d INVA=%d INC=%d\n", F0, F1, ENA, ENB, INVA, INC);
+        // 🔹 Memória
+        int WRITE = linha[17] - '0';
+        int READ  = linha[18] - '0';
 
-        // 🟢 PASSO 6 — Chamada da ULA
+        // 🔹 B-bus
+        int Bsel = (linha[19]-'0')*8 +
+                   (linha[20]-'0')*4 +
+                   (linha[21]-'0')*2 +
+                   (linha[22]-'0');
+
+        // 🔹 Seleção do B
+        int B;
+        switch(Bsel) {
+            case 0: B = mdr; break;
+            case 1: B = pc; break;
+            case 2: B = mbr; break;
+            case 3: B = mbr; break;
+            case 4: B = sp; break;
+            case 5: B = lv; break;
+            case 6: B = cpp; break;
+            case 7: B = tos; break;
+            case 8: B = opc; break;
+            default: B = 0;
+        }
+
+        // ULA
         int carry;
-        int S = ula(A, B, F0, F1, ENA, ENB, INVA, INC, &carry);
+        int S = ula(h, B, F0, F1, ENA, ENB, INVA, INC, &carry);
 
-        // 🟢 PASSO 7 — Atualização de A
-        int LogA = A; // valor antigo de A
-        A = S;
+        // SHIFT
+        int Sd = S;
+        if (SLL8) Sd = S << 8;
+        if (SRA1) Sd = S >> 1;
 
-        printf("Cycle (PC): %d | IR: %s | A: %d | B: %d | S: %d | Carry: %d\n", PC, IR, LogA, B, S, carry);
+        // Atualização C-bus
+        if (C[8]) h   = Sd;
+        if (C[7]) opc = Sd;
+        if (C[6]) tos = Sd;
+        if (C[5]) cpp = Sd;
+        if (C[4]) lv  = Sd;
+        if (C[3]) sp  = Sd;
+        if (C[2]) pc  = Sd;
+        if (C[1]) mdr = Sd;
+        if (C[0]) mar = Sd;
 
-        fprintf(log_file, "Cycle: %d\n", PC);
-        fprintf(log_file, "PC: %d\n", PC);
-        fprintf(log_file, "IR: %s\n", IR);
-        fprintf(log_file, "A: %d\n", LogA);
-        fprintf(log_file, "B: %d\n", B);
-        fprintf(log_file, "S: %d\n", S);
-        fprintf(log_file, "Carry: %d\n", carry);
-        fprintf(log_file, "----------------------\n");
+        // MEMÓRIA (DEPOIS DO C-BUS)
+        if (WRITE) {
+            memoria[mar] = mdr;
+        }
 
-        PC++;
+        if (READ) {
+            mdr = memoria[mar];
+        }
+
+        // 🔹 LOG
+        printf("H=%d OPC=%d TOS=%d CPP=%d LV=%d SP=%d PC=%d MDR=%d MAR=%d\n",
+               h, opc, tos, cpp, lv, sp, pc, mdr, mar);
+
+        printf("B veio de: %d | S=%d | Sd=%d\n", Bsel, S, Sd);
+
+        printf("Memoria:\n");
+        for(int i=0;i<8;i++)
+            printf("[%d]=%d ", i, memoria[i]);
+        printf("\n");
+
+        ciclo++;
     }
 
     fclose(file);
-    fclose(log_file);
 
-    printf("\nProcessamento concluido. Verifique o arquivo 'saida_etapa1.txt'.\n");
+    printf("\nExecucao concluida.\n");
     return 0;
 }
